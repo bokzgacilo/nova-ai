@@ -10,14 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^7.0.1",
+    "@capacitor/cli": "^7.0.1",
+    "@capacitor/core": "^7.0.1",
+    "@capacitor/ios": "^7.0.1",
     "@chakra-ui/react": "^2.10.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@google/generative-ai": "^0.21.0",
     "axios": "^1.7.9",
+    "firebase": "^11.2.0",
     "framer-motion": "^12.3.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
