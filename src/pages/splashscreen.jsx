@@ -1,5 +1,5 @@
 import { Button, Container, Flex, Heading, Image, Text } from "@chakra-ui/react";
-import LOGO from "../assets/nova-ai.jpg";
+import LOGO from "../assets/icon-only.png";
 import { useNavigate } from "react-router-dom";
 
 export default function SplashScreen() {

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { FiClock  } from "react-icons/fi";
+import { FiClock } from "react-icons/fi";
 import { FiSend } from "react-icons/fi";
-import { FiTrash  } from "react-icons/fi";
-import LOGO from "../assets/nova-ai.jpg";
+import { FiTrash } from "react-icons/fi";
+import LOGO from "../assets/icon-only.png";
+import BACKGROUND from "../assets/hexagon.png";
 import { BiCopy, BiLogoYoutube, BiPencil } from "react-icons/bi";
 import {
   Box,
@@ -116,43 +117,73 @@ function Chat() {
   };
 
   const HandleCopy = (index) => {
-    navigator.clipboard.writeText(PromptArray[index].response).then(() => {
-      // If successfully copied, show the alert and toast
-      toast({
-        title: 'Copy Successful!',
-        description: "Prompt successfully copied to your clipboard.",
-        status: 'success',
-        duration: 9000,
-        isClosable: true,
+    navigator.clipboard
+      .writeText(PromptArray[index].response)
+      .then(() => {
+        // If successfully copied, show the alert and toast
+        toast({
+          title: "Copy Successful!",
+          description: "Prompt successfully copied to your clipboard.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Copy failed.",
+          description: "There was an issue copying the text to the clipboard.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
       });
-    }).catch((error) => {
-      toast({
-        title: 'Copy failed.',
-        description: 'There was an issue copying the text to the clipboard.',
-        status: 'error',
-        duration: 9000,
-        isClosable: true,
-      });
+  };
+
+  const HandleRemoveHistory = (index) => {
+
+    toast({
+      title: "Prompt Removed!",
+      description: PromptArray[index].prompt + " removed successfully!",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
     });
-  }
+
+    const updatedArray = PromptArray.filter((_, i) => i !== index)
+
+
+    SetPromptArray(updatedArray)
+  };
 
   return (
-    <Container maxW="600px">
+    <Container
+      backgroundColor="#ededed"
+      maxW="600px"
+      p={0}
+    >
       <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>History</DrawerHeader>
           <DrawerBody>
-            <Stack>
+            <Stack spacing={4}>
               {PromptArray.length > 0 ? (
                 PromptArray.map((prompt, index) => (
-                  <Text key={index}>{prompt.prompt}</Text>
+                  <Flex key={index} direction='row' alignItems='center' gap={4}>
+                    <Icon boxSize={4} as={FiTrash} onClick={() => HandleRemoveHistory(index)} />
+                    <Text key={index}>{prompt.prompt}</Text>
+                  </Flex>
                 ))
               ) : (
                 <Text fontWeight="500">No prompt to show</Text>
               )}
-              <Button leftIcon={<FiTrash />} onClick={HandleClearHistory} colorScheme="red">
+              <Button
+                leftIcon={<FiTrash />}
+                onClick={HandleClearHistory}
+                colorScheme="red"
+              >
                 Clear History
               </Button>
             </Stack>
@@ -162,26 +193,44 @@ function Chat() {
 
       <Flex height="100vh" direction="column">
         <Flex
-          mt={4}
-          mb={4}
+          p={4}
           direction="row"
           alignItems="center"
           justifyContent="space-between"
+          backgroundColor="#fff"
         >
-          <Flex direction="row" alignItems='center' gap={4}>
+          <Flex direction="row" alignItems="center" gap={4}>
             <Image boxSize="32px" objectFit="cover" src={LOGO} />
             <Heading size="lg">Nova AI</Heading>
           </Flex>
           <Icon boxSize={6} as={FiClock} onClick={onOpen} />
         </Flex>
-        <Stack borderRadius={4} flex={1} overflowY="auto" spacing={4}>
+        <Stack
+          borderRadius={4}
+          flex={1}
+          overflowY="auto"
+          spacing={4}
+          pr={4}
+          pl={4}
+        >
           {PromptArray.length > 0
             ? PromptArray.map((prompt, index) => (
-                <Stack key={index} pb={4} >
-                  <Text pt={2} pb={2} pr={4} pl={4} fontSize="sm" fontWeight="bold" alignSelf='flex-end' backgroundColor='#F8F8F8' borderRadius={8}>
+                <Stack key={index} pb={4} mt={2}>
+                  <Text
+                    pt={2}
+                    pb={2}
+                    pr={4}
+                    pl={4}
+                    fontSize="md"
+                    fontWeight="semibold"
+                    alignSelf="flex-end"
+                    color="#F8F8F8"
+                    backgroundColor="#006AFF"
+                    borderRadius={8}
+                  >
                     {prompt.prompt}
                   </Text>
-                  <Tabs size="sm"  backgroundColor='#F8F8F8'>
+                  <Tabs size="sm" backgroundColor="#F8F8F8">
                     <TabList>
                       <Tab>
                         <Icon as={BiPencil} mr={2} />
@@ -194,8 +243,15 @@ function Chat() {
                     </TabList>
                     <TabPanels>
                       <TabPanel>
-                        <Flex direction='row' justifyContent='flex-end' mb={4}>
-                          <Button align='flex-end' size='sm' leftIcon={<BiCopy />} onClick={() => HandleCopy(index)}>Copy</Button>
+                        <Flex direction="row" justifyContent="flex-end" mb={4}>
+                          <Button
+                            align="flex-end"
+                            size="sm"
+                            leftIcon={<BiCopy />}
+                            onClick={() => HandleCopy(index)}
+                          >
+                            Copy
+                          </Button>
                         </Flex>
                         <Box
                           as="pre"
@@ -254,8 +310,8 @@ function Chat() {
         <Flex
           direction="row"
           gap={2}
-          mt={4}
-          mb={4}
+          p={4}
+          backgroundColor="#fff"
           alignItems="center"
           justifyContent="space-between"
         >
@@ -265,7 +321,11 @@ function Chat() {
             placeholder="Message Nova AI"
             type="text"
           />
-          <Button leftIcon={<FiSend />} onClick={HandlePrompt} colorScheme="blue">
+          <Button
+            leftIcon={<FiSend />}
+            onClick={HandlePrompt}
+            colorScheme="blue"
+          >
             Send
           </Button>
         </Flex>
