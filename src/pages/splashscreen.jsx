@@ -1,4 +1,4 @@
-import { Button, Container, Flex, Heading, Image, Stack, Text } from "@chakra-ui/react";
+import { Button, Container, Flex, Heading, Image, Text } from "@chakra-ui/react";
 import LOGO from "../assets/nova-ai.jpg";
 import { useNavigate } from "react-router-dom";
 

@@ -1,5 +1,9 @@
-import { initializeApp } from "firebase/app";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { FiClock  } from "react-icons/fi";
+import { FiSend } from "react-icons/fi";
+import { FiTrash  } from "react-icons/fi";
+import LOGO from "../assets/nova-ai.jpg";
+import { BiCopy, BiLogoYoutube, BiPencil } from "react-icons/bi";
 import {
   Box,
   Button,
@@ -9,7 +13,6 @@ import {
   Input,
   Stack,
   Spinner,
-  Avatar,
   Text,
   useDisclosure,
   Drawer,
@@ -23,110 +26,115 @@ import {
   Tab,
   TabPanels,
   TabPanel,
-  Card,
-  CardBody,
   Image,
+  Icon,
+  useToast,
 } from "@chakra-ui/react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getDatabase, ref, set } from "firebase/database";
 import axios from "axios";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB4fTVJM0CS6RBrIsjW65Y4525kJezRIms",
-  authDomain: "nova-ai-450014.firebaseapp.com",
-  databaseURL:
-    "https://nova-ai-450014-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "nova-ai-450014",
-  storageBucket: "nova-ai-450014.firebasestorage.app",
-  messagingSenderId: "454543426095",
-  appId: "1:454543426095:web:d66880345d133f447cfcda",
-};
-
-// Initialize Firebase
-
 function Chat() {
-  const app = initializeApp(firebaseConfig);
-  const {isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [InputPrompt, SetInputPrompt] = useState("");
-  const [promptResponses, setpromptResponses] = useState([]);
-  const [promptInput, setPromptInput] = useState([]);
   const [Loading, setLoading] = useState(false);
-  const [itemsArray, setItemsArray] = useState([]);
+  const [PromptArray, SetPromptArray] = useState([]);
 
-  const genAI = new GoogleGenerativeAI(
-    "AIzaSyCPTVx7extfB2xgx3qJ-6qWE-NT7YJ4KTU"
-  );
+  useEffect(() => {
+    console.log(PromptArray);
+  }, [PromptArray]);
 
   const getSearchResults = async () => {
-    getResponseForGivenPrompt();
-    const url = `https://www.googleapis.com/customsearch/v1`;
-
     try {
-      const response = await axios.get(url, {
-        params: {
-          key: "AIzaSyCPTVx7extfB2xgx3qJ-6qWE-NT7YJ4KTU",
-          cx: "d0a2fabdf5d414739",
-          q: InputPrompt,
-          num: 2,
-        },
-      });
+      const response = await axios.get(
+        `https://www.googleapis.com/customsearch/v1`,
+        {
+          params: {
+            key: "AIzaSyCPTVx7extfB2xgx3qJ-6qWE-NT7YJ4KTU",
+            cx: "d0a2fabdf5d414739",
+            q: InputPrompt,
+            num: 10,
+          },
+        }
+      );
 
-      const links = response.data.items.map((item) => item.link);
       const transformedArray = response.data.items.map((item) => ({
         link: item.link,
         title: item.title,
-        thumbnail: item.pagemap?.cse_thumbnail?.[0]?.src, // Safe access to thumbnail using optional chaining
+        thumbnail: item.pagemap?.cse_thumbnail?.[0]?.src,
       }));
-
-      setItemsArray(transformedArray);
-
-      return links;
+      return transformedArray;
     } catch (error) {
       console.error("Error fetching search results:", error);
       return [];
     }
   };
 
-  const getResponseForGivenPrompt = async () => {
-    setLoading(true);
-    setPromptInput([...promptInput, InputPrompt]);
+  const getPromptResponse = async () => {
+    const genAI = new GoogleGenerativeAI(
+      "AIzaSyCPTVx7extfB2xgx3qJ-6qWE-NT7YJ4KTU"
+    );
 
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
 
       const generationConfig = {
-        // Add generation configuration
-        temperature: 0.3, // Adjust for shorter, more predictable responses
-        maxOutputTokens: 64, // Limit the number of output tokens (adjust as needed)
+        temperature: 0.3,
+        maxOutputTokens: 64,
       };
 
       const result = await model.generateContent(InputPrompt, generationConfig);
+      const prompt_response = result.response.text();
 
-      SetInputPrompt("");
-      const response = result.response;
-      const text = response.text();
-      setLoading(false);
-      const database = getDatabase(app);
-
-      setpromptResponses([...promptResponses, text]);
-      set(ref(database, "/chats/" + "sess1/" + InputPrompt), {
-        question: InputPrompt,
-        answer: text,
-      });
+      return prompt_response;
     } catch (error) {
       console.log(error);
-      console.log("Something Went Wrong");
-      setLoading(false);
     }
   };
 
-  const HandleClearHistory = () => {
-    SetInputPrompt([]);
-    setpromptResponses([]);
-    setItemsArray([]);
-    setPromptInput([]);
-    onClose()
+  const HandlePrompt = async () => {
+    setLoading(true);
+    const video_links = await getSearchResults();
+    const prompt_response = await getPromptResponse();
+
+    SetPromptArray((prevData) => [
+      ...prevData,
+      {
+        prompt: InputPrompt,
+        response: prompt_response,
+        video_links: video_links,
+      },
+    ]);
+    setLoading(false);
+    SetInputPrompt("");
   };
+
+  const HandleClearHistory = () => {
+    onClose();
+    SetInputPrompt("");
+    SetPromptArray([]);
+  };
+
+  const HandleCopy = (index) => {
+    navigator.clipboard.writeText(PromptArray[index].response).then(() => {
+      // If successfully copied, show the alert and toast
+      toast({
+        title: 'Copy Successful!',
+        description: "Prompt successfully copied to your clipboard.",
+        status: 'success',
+        duration: 9000,
+        isClosable: true,
+      });
+    }).catch((error) => {
+      toast({
+        title: 'Copy failed.',
+        description: 'There was an issue copying the text to the clipboard.',
+        status: 'error',
+        duration: 9000,
+        isClosable: true,
+      });
+    });
+  }
 
   return (
     <Container maxW="600px">
@@ -137,7 +145,14 @@ function Chat() {
           <DrawerHeader>History</DrawerHeader>
           <DrawerBody>
             <Stack>
-              <Button onClick={HandleClearHistory} colorScheme="red">
+              {PromptArray.length > 0 ? (
+                PromptArray.map((prompt, index) => (
+                  <Text key={index}>{prompt.prompt}</Text>
+                ))
+              ) : (
+                <Text fontWeight="500">No prompt to show</Text>
+              )}
+              <Button leftIcon={<FiTrash />} onClick={HandleClearHistory} colorScheme="red">
                 Clear History
               </Button>
             </Stack>
@@ -153,82 +168,86 @@ function Chat() {
           alignItems="center"
           justifyContent="space-between"
         >
-          <Heading size="lg">Nova AI</Heading>
-          <Avatar
-            onClick={onOpen}
-            size="sm"
-            name="Dan Abrahmov"
-            src="https://bit.ly/dan-abramov"
-          />
+          <Flex direction="row" alignItems='center' gap={4}>
+            <Image boxSize="32px" objectFit="cover" src={LOGO} />
+            <Heading size="lg">Nova AI</Heading>
+          </Flex>
+          <Icon boxSize={6} as={FiClock} onClick={onOpen} />
         </Flex>
-        <Stack borderRadius={4} flex={1} overflowY="auto">
-          {promptInput.length > 0 ? (
-            promptInput.map((prompt, index) => (
-              <Stack key={index}>
-                <Box>
-                  <Text fontSize="md" fontWeight="bold">
-                    {prompt}
+        <Stack borderRadius={4} flex={1} overflowY="auto" spacing={4}>
+          {PromptArray.length > 0
+            ? PromptArray.map((prompt, index) => (
+                <Stack key={index} pb={4} >
+                  <Text pt={2} pb={2} pr={4} pl={4} fontSize="sm" fontWeight="bold" alignSelf='flex-end' backgroundColor='#F8F8F8' borderRadius={8}>
+                    {prompt.prompt}
                   </Text>
-                </Box>
-                {Loading ? (
-                  <Flex justifyContent="center" gap={4} p={2} borderRadius={4}>
-                    <Spinner />
-                    <Text fontWeight="500">Generating Answer...</Text>
-                  </Flex>
-                ) : (
-                  <Tabs size="sm">
+                  <Tabs size="sm"  backgroundColor='#F8F8F8'>
                     <TabList>
-                      <Tab>Prompt</Tab>
-                      <Tab>Video</Tab>
+                      <Tab>
+                        <Icon as={BiPencil} mr={2} />
+                        Prompt
+                      </Tab>
+                      <Tab>
+                        <Icon as={BiLogoYoutube} mr={2} />
+                        Video
+                      </Tab>
                     </TabList>
                     <TabPanels>
-                      <TabPanel p={0}>
+                      <TabPanel>
+                        <Flex direction='row' justifyContent='flex-end' mb={4}>
+                          <Button align='flex-end' size='sm' leftIcon={<BiCopy />} onClick={() => HandleCopy(index)}>Copy</Button>
+                        </Flex>
                         <Box
-                          mt={2}
                           as="pre"
                           whiteSpace="pre-wrap"
                           wordBreak="break-word"
+                          fontSize="14px"
                         >
-                          <Text>
-                            {promptResponses[index] && (
-                              <Box
-                                as="pre"
-                                whiteSpace="pre-wrap"
-                                wordBreak="break-word"
-                                fontSize="14px"
-                              >
-                                {promptResponses[index]}
-                              </Box>
-                            )}
-                          </Text>
+                          {prompt.response}
                         </Box>
                       </TabPanel>
-                      <TabPanel p={0}>
+                      <TabPanel>
                         <Stack spacing={4}>
-                          {itemsArray.length > 0 &&
-                            itemsArray.map((item, index) => (
-                              <Card key={index}>
-                                <CardBody p={4}>
-                                  <Stack>
-                                    <Image
-                                      src={item.thumbnail}
-                                      alt={item.title}
-                                    />
-                                    <a href={item.link}>{item.title}</a>
-                                  </Stack>
-                                </CardBody>
-                              </Card>
-                            ))}
+                          {prompt.video_links.map((video, index) => (
+                            <Flex key={index} direction="row" gap={2}>
+                              <Image
+                                src={video.thumbnail}
+                                alt={video.title}
+                                width="20%"
+                                height="auto"
+                                objectFit="cover"
+                              />
+                              <a target="_blank" href={video.link}>
+                                {video.title}
+                              </a>
+                            </Flex>
+                          ))}
                         </Stack>
                       </TabPanel>
                     </TabPanels>
                   </Tabs>
-                )}
-              </Stack>
-            ))
-          ) : (
+                </Stack>
+              ))
+            : !Loading && (
+                <Flex
+                  height="100vh"
+                  justifyContent="center"
+                  direction="column"
+                  alignItems="center"
+                  gap={4}
+                  p={2}
+                  borderRadius={4}
+                >
+                  <Text fontWeight="bold" fontSize="36px" textAlign="center">
+                    Welcome to <br />
+                    Nova AI
+                  </Text>
+                </Flex>
+              )}
+          {Loading && (
             <Flex justifyContent="center" gap={4} p={2} borderRadius={4}>
-              <Text fontWeight="500">Welcome to Nova AI</Text>
+              <Spinner />
+              <Text fontWeight="500">Generating Answer...</Text>
             </Flex>
           )}
         </Stack>
@@ -246,7 +265,7 @@ function Chat() {
             placeholder="Message Nova AI"
             type="text"
           />
-          <Button onClick={getSearchResults} colorScheme="blue">
+          <Button leftIcon={<FiSend />} onClick={HandlePrompt} colorScheme="blue">
             Send
           </Button>
         </Flex>
